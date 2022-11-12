@@ -52,6 +52,7 @@ def main(stdscr):
 
 
     while True:
+
         stdscr.clear()
 
         stdscr.addstr(0, 0, "Team {} - your turn ".format(teams[cur_team_index]), curses.color_pair(cur_team_index+1))
@@ -59,13 +60,21 @@ def main(stdscr):
         # Iterate over all powerups and draw each of them
         for powerup in powerups:
             stdscr.addstr(powerup.y, powerup.x, powerup.symbol)
-            if player.x == powerup.x and player.y == powerup.y:
-                stdscr.addstr(2, 0, "Pick up powerup? - {} (${})".format(powerup.name, powerup.value))
-                stdscr.addstr(powerup.y + 1, powerup.x, "{} (${})".format(powerup.name, powerup.value))
-                player.value += powerup.value
-                powerups.remove(powerup)
 
-        stdscr.addstr(1, 0, "Player - {}".format(player))
+        def get_powerup_at(x, y):
+            for powerup in powerups:
+                if x == powerup.x and y == powerup.y:
+                    return powerup
+            return None
+
+        powerup = get_powerup_at(player.x, player.y)
+        if powerup:
+            stdscr.addstr(2, 0, "Pick up powerup? - {} (${})".format(powerup.name, powerup.value))
+            stdscr.addstr(powerup.y + 1, powerup.x, "{} (${})".format(powerup.name, powerup.value))
+            player.value += powerup.value
+            powerups.remove(powerup)
+
+        stdscr.addstr(1, 0, f"Player - {player.name} ({player.x}, {player.y}) - ${player.value}")
 
         # Draw the player at their current position
         stdscr.addstr(player.y, player.x, player.symbol, curses.color_pair(3))
