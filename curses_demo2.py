@@ -9,7 +9,7 @@ from curses import wrapper
 
 
 @dataclass
-class Player:
+class Entity:
     # old skool:
     # def __init__(self, x: int, y: int, player_name: str):
     #     self.x = x
@@ -19,27 +19,20 @@ class Player:
     # with dataclasses:
     x: int
     y: int
-    player_name: str
-    symbol: str
-    money: int = 0
-
-@dataclass
-class PowerUp:
-    x: int
-    y: int
     name: str
     symbol: str
-    value: int
+    value: int = 0
+
 
 def main(stdscr):
     cur_team_index = 0
     teams = [f"BLUE", f"RED"]
-    player = Player(30, 3, "Sim", "S")
+    player = Entity(30, 3, "Sim", "S")
 
     powerups = [
-        PowerUp(0, 5, "Elixir of Strength", 's', 100),
-        PowerUp(50, 8, "Potion of Potency", 'p', 100),
-        PowerUp(33, 4, "Test thingy", 't', 10),
+        Entity(0, 5, "Elixir of Strength", 's', 100),
+        Entity(50, 8, "Potion of Potency", 'p', 100),
+        Entity(33, 4, "Test thingy", 't', 10),
     ]
 
     stdscr.clear()
@@ -69,7 +62,7 @@ def main(stdscr):
             if player.x == powerup.x and player.y == powerup.y:
                 stdscr.addstr(2, 0, "Pick up powerup? - {} (${})".format(powerup.name, powerup.value))
                 stdscr.addstr(powerup.y + 1, powerup.x, "{} (${})".format(powerup.name, powerup.value))
-                player.money += powerup.value
+                player.value += powerup.value
                 powerups.remove(powerup)
 
         stdscr.addstr(1, 0, "Player - {}".format(player))
