@@ -5,22 +5,25 @@ public class JavaTypes {
         Person(String name) {}
     }
 
-    class IntBox {
+    static class IntBox {
         int value;
+        IntBox(int value) {
+            this.value = value;
+        }
     }
 
     public static void main(String[] args) {
         // In memory: 00000000000000000000000101
         int x = 5;
-        x * 2;
+        //x * 2;
 
         // In memory: 00000000000000000000000101
         int z = 5;
 
         // A reference to memory on the heap
         // In memory: 101010101010101010001011100 --> pointing to a mem address
-        IntBox y = IntBox(5);
-        y.value * 2
+        IntBox y = new IntBox(5);
+        System.out.println(y.value * 2);
 
 
 
