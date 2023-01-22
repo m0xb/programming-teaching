@@ -2,6 +2,48 @@ import curses
 from curses import wrapper
 
 
+class Component:
+
+    def __init__(self, window: curses.window):
+        self.window = window
+
+    def _get_top_left_yx(self) -> (int, int):
+        """
+        Internal helper function to return the top left coordinate. This is used to draw text at the appropriate
+        location within this component.
+        :return: The top left coordinate as a 2-tuple of ints: (row, col)
+        """
+        return (0, 0)
+
+    def set_text(self, text: str) -> None:
+        lines = text.split('\n')
+        top, left = self._get_top_left_yx()
+        for idx, line in enumerate(lines):
+            self.window.addstr(top + idx, left, line)
+
+    def touchwin(self) -> None:
+        self.window.touchwin()
+
+    def refresh(self) -> None:
+        raise Exception("Abstract method, subclasses must implement!")
+
+
+class PlainComponent(Component):
+
+    def refresh(self) -> None:
+        self.window.refresh()
+
+
+class BorderedComponent(Component):
+
+    def _get_top_left_yx(self) -> (int, int):
+        return (1, 1)
+
+    def refresh(self):
+        self.window.border()
+        self.window.refresh()
+
+
 def main(stdscr):
     """
     The main function of this curses TUI (Textual User Interface) program
@@ -12,10 +54,10 @@ def main(stdscr):
 
     stdscr.clear()
 
-    # Create two windows, which we can swap between
-    main_windows = [
-        curses.newwin(10, 90, 0, 0),
-        curses.newwin(5, 50, 1, 5),
+    # Create the list of components in our UI
+    main_components = [
+        BorderedComponent(curses.newwin(10, 90, 0, 0)),
+        BorderedComponent(curses.newwin(5, 50, 2, 5)),
     ]
 
     # Do a one-time, preliminary refresh on the stdscr.
@@ -24,27 +66,18 @@ def main(stdscr):
     # https://stackoverflow.com/questions/67021267/python-curses-newwin-not-being-displayed-if-stdscr-hasnt-been-refreshed-first
     stdscr.refresh()
 
-    # main_windows[0].bkgd('.')
-    main_windows[0].border()
-    main_windows[0].addstr(0, 3, "Window #1")
-    main_windows[0].addstr(1, 2, "Curses is cool")
-
-    # main_windows[1].bkgd(',')
-    main_windows[1].border()
-    main_windows[1].addstr(0, 3, "Window #2")
-    main_windows[1].addstr(1, 2, "Math is also very cool too")
+    main_components[0].set_text("Window #1\nCurses is cool")
+    main_components[1].set_text("Window #2\nMath is also very cool too, as well")
 
     # UI state vars:
-    current_window_index = 0
+    active_component_index = 0
 
     while True:
         # 1. Redraw
         # ---------------------------------------------------------------------
-        # touchwin() invalidates the area covered by this window, making curses redraw content.
-        main_windows[current_window_index].touchwin()
         # refresh() redraws the screen area covered by this window.
         # It applies all changes that have been made since the last refresh (I think?).
-        main_windows[current_window_index].refresh()
+        main_components[active_component_index].refresh()
 
         # 2. User input
         # ---------------------------------------------------------------------
@@ -53,7 +86,9 @@ def main(stdscr):
         if ch == 'q':
             break
         elif ch == ' ':
-            current_window_index = (current_window_index + 1) % len(main_windows)
+            active_component_index = (active_component_index + 1) % len(main_components)
+            # touchwin() invalidates the area covered by this window, making curses redraw content.
+            main_components[active_component_index].touchwin()
 
 
 wrapper(main)
