@@ -41,7 +41,7 @@ sumEvenG xs | length xs == 0 = 0
 -- Sum version 1 - what people would normally write, NOT tail recursive
 sum1 :: [Int] -> Int
 sum1 [] = 0
-sum1 (x:xs) = x + sumHelper xs
+sum1 (x:xs) = x + sum1 xs
 
 -- Sum version 2 - tail recursive
 sum2 :: [Int] -> Int
