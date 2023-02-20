@@ -50,3 +50,24 @@ sum2 xs = sumHelper 0 xs
 sumHelper :: Int -> [Int] -> Int
 sumHelper acc [] = acc
 sumHelper acc (x:xs) = sumHelper (acc + x) xs
+
+-- Inspired by HOCON syntax:
+-- Parse a dot-delimited sequence of strings into a list.
+-- Sections may be quoted; dots in quoted sections do not delimit strings.
+-- Examples:
+--  readKey "a.b.c" -> ["a", "b", "c"]
+--  readKey "a.'b.c'.d" -> ["a", "b.c", "d"]
+readKey :: [Char] -> [[Char]]
+readKey "" = [""]
+readKey ('\'':cs) = readQuoted cs
+readKey ('.':cs) = "":readKey cs
+readKey (c:cs) = (c:key):rest
+  where
+    (key:rest) = readKey cs -- c = 'f', cs = "oo.bar", readKey "oo.bar" = ["oo", "bar"]
+
+readQuoted :: [Char] -> [[Char]]
+readQuoted "" = error "Unterminated string"
+readQuoted ('\'':rest) = readKey rest
+readQuoted (c:cs) = (c:key):rest
+  where
+    (key:rest) = readQuoted cs
