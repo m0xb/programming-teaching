@@ -77,3 +77,17 @@ readQuoted (c:cs) = (c:key):rest
 dictGet :: [([String], String)] -> String -> String
 dictGet dict key = snd (head (filter (\k -> fst k == parsedKey) dict))
   where parsedKey = readKey key
+
+huhSort :: [Int] -> [Int]
+huhSort [] = []
+huhSort [x] = [x]
+huhSort (x:xs) = (filter (\y -> x > y) (huhSort xs)) ++ x:(filter (\y -> x <= y) (huhSort xs))
+
+anotherSort :: [Int] -> [Int]
+anotherSort [] = []
+anotherSort [x] = [x]
+anotherSort lst = smallest : anotherSort (restA ++ restB)
+  where
+    smallest = minimum lst
+    restA = takeWhile (\x -> smallest < x) lst
+    restB = drop (1 + length restA) lst
