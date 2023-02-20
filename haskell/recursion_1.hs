@@ -61,6 +61,7 @@ readKey :: [Char] -> [[Char]]
 readKey "" = [""]
 readKey ('\'':cs) = readQuoted cs
 readKey ('.':cs) = "":readKey cs
+readKey (' ':cs) = readKey cs -- This one line is all that's needed to ignore unquoted spaces
 readKey (c:cs) = (c:key):rest
   where
     (key:rest) = readKey cs -- c = 'f', cs = "oo.bar", readKey "oo.bar" = ["oo", "bar"]
@@ -71,3 +72,8 @@ readQuoted ('\'':rest) = readKey rest
 readQuoted (c:cs) = (c:key):rest
   where
     (key:rest) = readQuoted cs
+
+-- dictGet [(["a","b"], "foo"), (["a","z"], "bar")] "a.z" -> "bar"
+dictGet :: [([String], String)] -> String -> String
+dictGet dict key = snd (head (filter (\k -> fst k == parsedKey) dict))
+  where parsedKey = readKey key
