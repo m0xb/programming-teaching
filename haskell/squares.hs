@@ -3,7 +3,22 @@ type Square = (Int,Int,Int,[Char])
 drawSquares :: [Square] -> IO ()
 drawSquares squares = putStr result
   where
-    result = render squares (1000-1) 50
+    (maxX, maxY) = extents squares
+    result = render squares ((maxX + 1) * (maxY + 1) - 1) (maxX + 1)
+
+extents :: [Square] -> (Int, Int)
+extents [] = (0, 0)
+extents (square:rest) = (maxX, maxY)
+  where
+    (restMaxX, restMaxY) = extents rest
+    maxX = max restMaxX (getMaxX square)
+    maxY = max restMaxY (getMaxY square)
+
+getMaxX :: Square -> Int
+getMaxX (x, _, sz, _) = x + sz
+
+getMaxY :: Square -> Int
+getMaxY (_, y, sz, _) = y + sz
 
 -- render square idx rowLength
 render :: [Square] -> Int -> Int -> [Char]
