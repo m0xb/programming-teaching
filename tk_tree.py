@@ -1,7 +1,14 @@
 import random
 import tkinter as tk
+from dataclasses import dataclass
 
 import tk_base
+
+
+@dataclass
+class DrawOptions:
+    subtree_bounds: bool = False
+
 
 class TreeNode:
 
@@ -19,10 +26,10 @@ class TreeNode:
         self.left = left
         self.right = right
 
-    def draw(self, canvas):
+    def draw(self, canvas, opts: DrawOptions):
         self.calculate_size()
         self.calculate_child_positions()
-        self._draw(canvas)
+        self._draw(canvas, opts)
 
     def calculate_child_positions(self):
         half_width = self.width / 2
@@ -59,20 +66,21 @@ class TreeNode:
                 + (self.H_PAD if self.left or self.right else 0)
             self.height = self.NODE_SIZE + max_height + self.V_PAD
 
-    def _draw(self, canvas):
+    def _draw(self, canvas, opts: DrawOptions):
         half_width = self.width / 2
         half_size = self.NODE_SIZE / 2
         canvas.create_oval(self.x + half_width - half_size, self.y, self.x + half_width + half_size, self.y + self.NODE_SIZE, outline="#FF0")
         canvas.create_text(self.x + half_width, self.y + half_size, text=str(self.value))
         if self.count > 1:
             canvas.create_text(self.x + half_width, self.y + half_size + 10, text=str(self.count), font=('serif', 8))
-        # canvas.create_rectangle(self.x, self.y, self.x + self.width, self.y + self.height, outline="#F00")
+        if opts.subtree_bounds:
+            canvas.create_rectangle(self.x, self.y, self.x + self.width, self.y + self.height, outline="#F00")
         if self.left:
             canvas.create_line(self.x + half_width, self.y + self.NODE_SIZE, self.left.x + self.left.width / 2, self.left.y)
-            self.left._draw(canvas)
+            self.left._draw(canvas, opts)
         if self.right:
             canvas.create_line(self.x + half_width, self.y + self.NODE_SIZE, self.right.x + self.right.width / 2, self.right.y)
-            self.right._draw(canvas)
+            self.right._draw(canvas, opts)
 
     def insert(self, node):
         if node.value == self.value:
@@ -97,6 +105,7 @@ class TreeNode:
 
 class TreeUI:
     def __init__(self):
+        self.draw_options = DrawOptions(subtree_bounds=False)
         self.reset()
 
     def reset(self, app=None):
@@ -107,6 +116,16 @@ class TreeUI:
         if app:
             self.draw(app)
 
+    def toggle_bounds(self, app):
+        self.draw_options.subtree_bounds = not self.draw_options.subtree_bounds
+        self.draw(app)
+
+    def add_node(self, app):
+        self.tree.insert(TreeNode(random.randint(1, 100)))
+        # self.tree.insert(TreeNode(self.next_value))
+        self.next_value += 1
+        self.draw(app)
+
     def draw(self, app):
         # tree = TreeNode(
         #     10,
@@ -116,13 +135,10 @@ class TreeUI:
         # tree.y = 5
 
         app.canvas.delete("all")
-        self.tree.insert(TreeNode(random.randint(1, 100)))
-        # self.tree.insert(TreeNode(self.next_value))
-        self.next_value += 1
-        self.tree.draw(app.canvas)
+        self.tree.draw(app.canvas, self.draw_options)
 
         app.canvas.create_text(5, 800, anchor=tk.SW, fill="#FFF", text="Height: " + str(self.tree.tree_height()))
 
 
 tree_ui = TreeUI()
-tk_base.TkBaseApp({"Draw": tree_ui.draw, "Reset": tree_ui.reset}).run()
+tk_base.TkBaseApp({"Add Node": tree_ui.add_node, "Toggle Bounds": tree_ui.toggle_bounds, "Reset": tree_ui.reset}).run()
