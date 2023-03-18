@@ -74,7 +74,9 @@ class TreeNode:
         if self.count > 1:
             canvas.create_text(self.x + half_width, self.y + half_size + 10, text=str(self.count), font=('serif', 8))
         if opts.subtree_bounds:
-            canvas.create_rectangle(self.x, self.y, self.x + self.width, self.y + self.height, outline="#F00")
+            outline_colors = ['#F00', '#F80', '#FF0', '#0F0', '#0F8', '#0FF', '#08F', '#00F']
+            outline_color = outline_colors[(self.tree_height() - 1) % len(outline_colors)]
+            canvas.create_rectangle(self.x, self.y, self.x + self.width, self.y + self.height, outline=outline_color)
         if self.left:
             canvas.create_line(self.x + half_width, self.y + self.NODE_SIZE, self.left.x + self.left.width / 2, self.left.y)
             self.left._draw(canvas, opts)
