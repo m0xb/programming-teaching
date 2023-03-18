@@ -9,4 +9,4 @@ def draw(app):
     h = random.randint(1, 100)
     app.canvas.create_rectangle(x, y, x+w, y+h, fill="#00F", outline="#44F")
 
-tk_base.TkBaseApp({"draw": draw}).run()
+tk_base.TkBaseApp({"Draw a rectangle!": draw}).run()
