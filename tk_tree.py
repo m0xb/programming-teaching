@@ -32,13 +32,13 @@ class TreeNode:
         self._draw(canvas, opts)
 
     def calculate_child_positions(self):
-        half_width = self.width / 2
+        left_offset = self.left.width + self.H_PAD if self.left else 0
         if self.left:
             self.left.x = self.x
             self.left.y = self.y + self.NODE_SIZE + self.V_PAD
             self.left.calculate_child_positions()
         if self.right:
-            self.right.x = self.x + half_width + self.H_PAD/2
+            self.right.x = self.x + left_offset + self.H_PAD/2
             self.right.y = self.y + self.NODE_SIZE + self.V_PAD
             self.right.calculate_child_positions()
 
