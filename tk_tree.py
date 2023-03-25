@@ -7,6 +7,7 @@ import tk_base
 
 @dataclass
 class DrawOptions:
+    line_colors: list
     subtree_bounds: bool = False
 
 
@@ -69,19 +70,20 @@ class TreeNode:
     def _draw(self, canvas, opts: DrawOptions):
         half_width = self.width / 2
         half_size = self.NODE_SIZE / 2
-        canvas.create_oval(self.x + half_width - half_size, self.y, self.x + half_width + half_size, self.y + self.NODE_SIZE, outline="#FF0")
+
+        line_color = opts.line_colors[(self.tree_height() - 1) % len(opts.line_colors)]
+
+        canvas.create_oval(self.x + half_width - half_size, self.y, self.x + half_width + half_size, self.y + self.NODE_SIZE, outline=line_color)
         canvas.create_text(self.x + half_width, self.y + half_size, text=str(self.value))
         if self.count > 1:
             canvas.create_text(self.x + half_width, self.y + half_size + 10, text=str(self.count), font=('serif', 8))
         if opts.subtree_bounds:
-            outline_colors = ['#F00', '#F80', '#FF0', '#0F0', '#0F8', '#0FF', '#08F', '#00F']
-            outline_color = outline_colors[(self.tree_height() - 1) % len(outline_colors)]
-            canvas.create_rectangle(self.x, self.y, self.x + self.width, self.y + self.height, outline=outline_color)
+            canvas.create_rectangle(self.x, self.y, self.x + self.width, self.y + self.height, outline=line_color)
         if self.left:
-            canvas.create_line(self.x + half_width, self.y + self.NODE_SIZE, self.left.x + self.left.width / 2, self.left.y)
+            canvas.create_line(self.x + half_width, self.y + self.NODE_SIZE, self.left.x + self.left.width / 2, self.left.y, fill=line_color)
             self.left._draw(canvas, opts)
         if self.right:
-            canvas.create_line(self.x + half_width, self.y + self.NODE_SIZE, self.right.x + self.right.width / 2, self.right.y)
+            canvas.create_line(self.x + half_width, self.y + self.NODE_SIZE, self.right.x + self.right.width / 2, self.right.y, fill=line_color)
             self.right._draw(canvas, opts)
 
     def insert(self, node):
@@ -107,7 +109,8 @@ class TreeNode:
 
 class TreeUI:
     def __init__(self):
-        self.draw_options = DrawOptions(subtree_bounds=False)
+        self.draw_options = DrawOptions(['#FFF'], subtree_bounds=False)
+        self.colorful = False
         self.reset()
 
     def reset(self, app=None):
@@ -120,6 +123,14 @@ class TreeUI:
 
     def toggle_bounds(self, app):
         self.draw_options.subtree_bounds = not self.draw_options.subtree_bounds
+        self.draw(app)
+
+    def toggle_colorful(self, app):
+        if self.colorful:
+            self.draw_options.line_colors = ['#FFF']
+        else:
+            self.draw_options.line_colors = ['#F00', '#F80', '#FF0', '#0F0', '#0F8', '#0FF', '#08F', '#00F']
+        self.colorful = not self.colorful
         self.draw(app)
 
     def add_node(self, app):
@@ -143,4 +154,4 @@ class TreeUI:
 
 
 tree_ui = TreeUI()
-tk_base.TkBaseApp({"Add Node": tree_ui.add_node, "Toggle Bounds": tree_ui.toggle_bounds, "Reset": tree_ui.reset}).run()
+tk_base.TkBaseApp({"Add Node": tree_ui.add_node, "Toggle Bounds": tree_ui.toggle_bounds, "Toggle Colors": tree_ui.toggle_colorful, "Reset": tree_ui.reset}).run()
