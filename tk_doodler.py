@@ -10,9 +10,49 @@ class DoodlerUI:
         self.mouse_last_pos = None
         self.mouse_color = 0
 
+        self.color_palette_index = 0
+        self.color_palettes = [
+            [0xffffff],
+            [0xff0000, 0xff8800, 0xffff00, 0x00ff00, 0x0000ff, 0xff00ff, 0xff0000],
+            [0xff0000, 0x0000ff],
+            [0xff0000, 0xff8000, 0xffff00, 0xff0000],
+            [0x0000ff, 0x00ffff, 0x80ffff, 0x0000ff],
+        ]
+
+    def change_palette(self, app):
+        self._do_initial_event_setup(app)
+        self.color_palette_index = (self.color_palette_index + 1) % len(self.color_palettes)
+        self.draw_ui(app)
+
     def reset(self, app):
         self._do_initial_event_setup(app)
         app.canvas.delete("all")
+        self.draw_ui(app)
+
+    def draw_ui(self, app):
+        app.canvas.delete('ui')
+
+        # seems that the width/height given by Tk returns some extra. E.g. 1206 returned vs 1200 real.
+        canvas_w = app.canvas.winfo_width() - 6
+        canvas_h = app.canvas.winfo_height() - 6
+        #print("Canvas is {} x {}".format(canvas_w, canvas_h))
+        pad = 5
+        sqsz = 15
+        num_colors = len(self.color_palettes)
+        for row_idx, color_palette in enumerate(self.color_palettes):
+            nth_from_bottom = num_colors - row_idx - 1
+            ytop = canvas_h - pad*nth_from_bottom - sqsz*(nth_from_bottom+1)
+            ybot = canvas_h - pad*nth_from_bottom - sqsz*nth_from_bottom
+            if row_idx == self.color_palette_index:
+                app.canvas.create_rectangle(
+                    pad - 3, ytop - 3,
+                    pad + (len(self.color_palettes[self.color_palette_index])) * sqsz + 3, ybot + 3,
+                    fill='#FFFFFF', outline='', tags='ui')
+            for col_idx, color in enumerate(self.color_palettes[row_idx]):
+                app.canvas.create_rectangle(
+                    pad + col_idx * sqsz, ytop,
+                    pad + (col_idx + 1) * sqsz, ybot,
+                    fill=self.int_to_hex_color(color), outline='', tags='ui')
 
     def _do_initial_event_setup(self, app):
         if not self.app:
@@ -21,6 +61,10 @@ class DoodlerUI:
             app.canvas.bind("<ButtonPress-1>", self.canvas_mouse_down)
             app.canvas.bind("<ButtonRelease-1>", self.canvas_mouse_up)
             app.canvas.bind("<B1-Motion>", self.canvas_move_mouse)
+
+    @staticmethod
+    def int_to_hex_color(int_color):
+        return f'#{int_color:06x}'
 
     def canvas_move_mouse(self, event):
         #print("moving mouse! event = {}, down = {}".format(event, self.is_mouse_down))
@@ -46,7 +90,7 @@ class DoodlerUI:
             actual_mouse_color = self.mouse_color
         else:
             from math import ceil, floor
-            colors = [0xff0000, 0x0000ff]
+            colors = self.color_palettes[self.color_palette_index]
             n_colors = len(colors)
             if self.mouse_color < 100:
                 self.mouse_color += 1
@@ -63,10 +107,11 @@ class DoodlerUI:
             # blending
             ra, ga, ba = torgb(blend_color_a)
             rb, gb, bb = torgb(blend_color_b)
-            actual_mouse_color = (int(ra*a_pct + rb*b_pct) << 16) + (int(ga*a_pct + gb*b_pct)//2 << 8) + int(ba*a_pct + bb*b_pct)
+            #print("ra,ga,ba = ({}, {}, {}), rb,gb,bb = ({}, {}, {})".format(ra, ga, ba, rb, gb, bb))
+            actual_mouse_color = (int(ra*a_pct + rb*b_pct) << 16) + (int(ga*a_pct + gb*b_pct) << 8) + int(ba*a_pct + bb*b_pct)
 
         r, g, b = torgb(actual_mouse_color)
-        print("rgb = ({}, {}, {}), hex={}".format(r, g, b, f'#{actual_mouse_color:06x}'))
+        print("rgb = ({}, {}, {}), hex={}".format(r, g, b, self.int_to_hex_color(actual_mouse_color)))
         self.app.canvas.create_line(self.mouse_last_pos[0], self.mouse_last_pos[1], event.x, event.y, fill=f'#{actual_mouse_color:06x}', width=3)
         self.mouse_last_pos = (event.x, event.y)
 
@@ -81,4 +126,4 @@ class DoodlerUI:
 
 
 doodler_ui = DoodlerUI()
-tk_base.TkBaseApp({"Reset": doodler_ui.reset}).run()
+tk_base.TkBaseApp({"Change palette": doodler_ui.change_palette, "Reset": doodler_ui.reset}).run()
