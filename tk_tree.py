@@ -10,6 +10,7 @@ class DrawOptions:
     line_colors: list
     subtree_bounds: bool = False
     text_color_fn: any = None  # apparently if I don't add a type annotation here, dataclasses doesn't see it as an attribute?
+    line_color_fn: any = None
 
 
 class TreeNode:
@@ -86,21 +87,29 @@ class TreeNode:
         half_width = self.width / 2
         half_size = self.NODE_SIZE / 2
 
-        line_color = opts.line_colors[(self.tree_height() - 1) % len(opts.line_colors)]
+        default_line_color = opts.line_colors[(self.tree_height() - 1) % len(opts.line_colors)]
 
         text_color = opts.text_color_fn(self) if opts.text_color_fn else '#FF0000'
+        if opts.line_color_fn:
+            node_line_color = opts.line_color_fn(self, 'node') or default_line_color
+            left_line_color = opts.line_color_fn(self, 'left') or default_line_color
+            right_line_color = opts.line_color_fn(self, 'right') or default_line_color
+        else:
+            node_line_color = default_line_color
+            left_line_color = default_line_color
+            right_line_color = default_line_color
 
-        canvas.create_oval(self.x + half_width - half_size, self.y, self.x + half_width + half_size, self.y + self.NODE_SIZE, outline=line_color)
+        canvas.create_oval(self.x + half_width - half_size, self.y, self.x + half_width + half_size, self.y + self.NODE_SIZE, outline=node_line_color)
         canvas.create_text(self.x + half_width, self.y + half_size, text=str(self.value), fill=text_color, font=('serif', self.FONT_SIZE))
         if self.count > 1:
             canvas.create_text(self.x + half_width, self.y + half_size + int(self.FONT_SIZE * .6), text=str(self.count), fill=text_color, font=('serif', self.FONT_SIZE//2))
         if opts.subtree_bounds:
-            canvas.create_rectangle(self.x, self.y, self.x + self.width, self.y + self.height, outline=line_color)
+            canvas.create_rectangle(self.x, self.y, self.x + self.width, self.y + self.height, outline=default_line_color)
         if self.left:
-            canvas.create_line(self.x + half_width, self.y + self.NODE_SIZE, self.left.x + self.left.width / 2, self.left.y, fill=line_color)
+            canvas.create_line(self.x + half_width, self.y + self.NODE_SIZE, self.left.x + self.left.width / 2, self.left.y, fill=left_line_color)
             self.left._draw(canvas, opts)
         if self.right:
-            canvas.create_line(self.x + half_width, self.y + self.NODE_SIZE, self.right.x + self.right.width / 2, self.right.y, fill=line_color)
+            canvas.create_line(self.x + half_width, self.y + self.NODE_SIZE, self.right.x + self.right.width / 2, self.right.y, fill=right_line_color)
             self.right._draw(canvas, opts)
 
     def insert(self, node):
@@ -117,10 +126,29 @@ class TreeNode:
             else:
                 self.right = node
 
+    def find_path(self, value):
+        if value == self.value:
+            return True, [self]
+        if value < self.value:
+            subtree = self.left
+        else:
+            subtree = self.right
+
+        if subtree:
+            subtree_res = subtree.find_path(value)
+            return subtree_res[0], [self] + subtree_res[1]
+        else:
+            return False, [self]
+
     def balance(self):
         hl = self.left.tree_height() if self.left else 0
         hr = self.right.tree_height() if self.right else 0
         return hr - hl
+
+    def size(self):
+        sl = self.left.size() if self.left else 0
+        sr = self.right.size() if self.right else 0
+        return sl + sr + 1
 
     def balanced_insert(self, v):
         if v == self.value:
@@ -204,7 +232,80 @@ class TreeUI:
         self.colorful = False
         self.reset()
 
+    _extra_ui_init = False
+    def _init_extra_ui(self, app):
+        if not app:
+            #print("Not ready...")
+            return
+        if self._extra_ui_init:
+            return
+        self._extra_ui_init = True
+
+        print("INIT EXTRA UI")
+        master = app.canvas.master
+        #print("master = {}".format(master))
+        import tkinter.messagebox
+        from tkinter import ttk
+        # from tkinter import Entry
+        #e = tk.Entry(master, bg="#FFFFFF")
+
+        def line_color_fn_highlight_path(node_found, path):
+            def fn(node, what):
+                if node_found:
+                    color = '#00FF00'
+                else:
+                    color = '#FF0000'
+                if what == 'node' and node in path:
+                    return color
+                elif what == 'left' and node.left in path:
+                    return color
+                elif what == 'right' and node.right in path:
+                    return color
+                else:
+                    return None
+            return fn
+
+        entry_str_var = tk.StringVar(master, '')
+        def onclick():
+            input_val = entry_str_var.get()
+            if not input_val:
+                return
+            if not input_val.isdigit():
+                tkinter.messagebox.showinfo("title??", message="Invalid value, must enter an integer.\n\nYou entered: '{}'".format(input_val))
+                return
+            print("FIND val='{}'".format(input_val))
+            result = self.tree.find_path(int(input_val))
+            print("RESULT = {}".format(result))
+            self.draw_options.line_color_fn = line_color_fn_highlight_path(result[0], result[1])
+            self.draw(app)
+            #tkinter.messagebox.showinfo("title??", message="Why is this a folder icon??\n\nAnyways, you entered: '{}'".format(input_val))
+        row_frame = ttk.Frame(master)
+        row_frame.pack(side=tk.LEFT)
+        e = ttk.Entry(row_frame, textvariable=entry_str_var)
+        e.pack(side=tk.LEFT)
+        b = ttk.Button(row_frame, text="Find Node", command=onclick)
+        b.pack(side=tk.LEFT)
+
+    def bigtree(self, app):
+        self._init_extra_ui(app)
+        def bigtreeinner(value, sz):
+            self.tree.insert(TreeNode(value))
+            if sz > 1:
+                bigtreeinner(value - sz, sz//2)
+                bigtreeinner(value + sz, sz//2)
+
+        value = 32
+        self.tree = TreeNode(value)
+        bigtreeinner(value - value//2, value//4)
+        bigtreeinner(value + value//2, value//4)
+
+        self.draw(app)
+    # b = ttk.Button(row_frame, text="Big Tree!", command=bigtree)
+    # b.pack(side=tk.RIGHT)
+
+
     def reset(self, app=None):
+        self._init_extra_ui(app)
         #self.tree = TreeNode(50)
         self.tree = TreeNode(10, # B
                              TreeNode(5, TreeNode(1), TreeNode(7)),  # A + children
@@ -266,6 +367,7 @@ class TreeUI:
 
         app.canvas.create_text(5, 800, anchor=tk.SW, fill="#FFF", text="Height: " + str(self.tree.tree_height()))
         app.canvas.create_text(100, 800, anchor=tk.SW, fill="#FFF", text="Balance: " + str(self.tree.balance()))
+        app.canvas.create_text(200, 800, anchor=tk.SW, fill="#FFF", text="Size: " + str(self.tree.size()))
 
 
 tree_ui = TreeUI()
@@ -275,5 +377,6 @@ tk_base.TkBaseApp({
     "Rotate Right": tree_ui.rotate_right,
     "Toggle Bounds": tree_ui.toggle_bounds,
     "Toggle Colors": tree_ui.toggle_colorful,
+    "Bigtree!": tree_ui.bigtree,
     "Reset": tree_ui.reset,
 }).run()
