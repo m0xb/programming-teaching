@@ -11,13 +11,15 @@ See examples at bottom.
 
 class TkBaseApp:
 
-    def __init__(self, funcs: dict):
+    def __init__(self, funcs: dict, init_ui=None):
         self.funcs = funcs
         self.canvas = None
+        self.main_window = None
+        self.init_ui = init_ui
 
     def run(self):
         # Define the GUI and various widgets
-        main_window = Tk()
+        self.main_window = main_window = Tk()
         # Create a container that belongs to the main window
         container_frame = ttk.Frame(main_window, padding=10)
         container_frame.pack()
@@ -33,6 +35,9 @@ class TkBaseApp:
         self.canvas = Canvas(container_frame, bg="#000000", height=800, width=1200)
         #canvas.pack(fill=BOTH, expand=1)
         self.canvas.pack()
+
+        if self.init_ui:
+            self.init_ui(self)
 
         # Start the GUI application!
         main_window.mainloop()

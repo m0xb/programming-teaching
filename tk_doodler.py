@@ -3,7 +3,7 @@ import tk_base
 class DoodlerUI:
 
     def __init__(self):
-        # The `app` attribute will be set once the user clicks reset... sucky, I know
+        # The `app` attribute will be set in init_ui
         self.app = None
 
         self.is_mouse_down = False
@@ -19,22 +19,28 @@ class DoodlerUI:
             [0x0000ff, 0x00ffff, 0x80ffff, 0x0000ff],
         ]
 
+    def init_ui(self, app):
+        self.app = app
+        print("Setting up events!")
+        app.canvas.bind("<ButtonPress-1>", self.canvas_mouse_down)
+        app.canvas.bind("<ButtonRelease-1>", self.canvas_mouse_up)
+        app.canvas.bind("<B1-Motion>", self.canvas_move_mouse)
+        self.draw_ui()
+
     def change_palette(self, app):
-        self._do_initial_event_setup(app)
         self.color_palette_index = (self.color_palette_index + 1) % len(self.color_palettes)
-        self.draw_ui(app)
+        self.draw_ui()
 
     def reset(self, app):
-        self._do_initial_event_setup(app)
         app.canvas.delete("all")
-        self.draw_ui(app)
+        self.draw_ui()
 
-    def draw_ui(self, app):
-        app.canvas.delete('ui')
+    def draw_ui(self):
+        self.app.canvas.delete('ui')
 
         # seems that the width/height given by Tk returns some extra. E.g. 1206 returned vs 1200 real.
-        canvas_w = app.canvas.winfo_width() - 6
-        canvas_h = app.canvas.winfo_height() - 6
+        canvas_w = self.app.canvas.winfo_width() - 6
+        canvas_h = self.app.canvas.winfo_height() - 6
         #print("Canvas is {} x {}".format(canvas_w, canvas_h))
         pad = 5
         sqsz = 15
@@ -44,23 +50,15 @@ class DoodlerUI:
             ytop = canvas_h - pad*nth_from_bottom - sqsz*(nth_from_bottom+1)
             ybot = canvas_h - pad*nth_from_bottom - sqsz*nth_from_bottom
             if row_idx == self.color_palette_index:
-                app.canvas.create_rectangle(
+                self.app.canvas.create_rectangle(
                     pad - 3, ytop - 3,
                     pad + (len(self.color_palettes[self.color_palette_index])) * sqsz + 3, ybot + 3,
                     fill='#FFFFFF', outline='', tags='ui')
             for col_idx, color in enumerate(self.color_palettes[row_idx]):
-                app.canvas.create_rectangle(
+                self.app.canvas.create_rectangle(
                     pad + col_idx * sqsz, ytop,
                     pad + (col_idx + 1) * sqsz, ybot,
                     fill=self.int_to_hex_color(color), outline='', tags='ui')
-
-    def _do_initial_event_setup(self, app):
-        if not self.app:
-            print("Setting up events!")
-            self.app = app
-            app.canvas.bind("<ButtonPress-1>", self.canvas_mouse_down)
-            app.canvas.bind("<ButtonRelease-1>", self.canvas_mouse_up)
-            app.canvas.bind("<B1-Motion>", self.canvas_move_mouse)
 
     @staticmethod
     def int_to_hex_color(int_color):
@@ -126,4 +124,9 @@ class DoodlerUI:
 
 
 doodler_ui = DoodlerUI()
-tk_base.TkBaseApp({"Change palette": doodler_ui.change_palette, "Reset": doodler_ui.reset}).run()
+tk_base.TkBaseApp({
+        "Change palette": doodler_ui.change_palette,
+        "Reset": doodler_ui.reset
+    },
+    doodler_ui.init_ui
+).run()
