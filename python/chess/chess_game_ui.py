@@ -1,3 +1,4 @@
+import os.path
 from tkinter import *
 from tkinter import ttk
 
@@ -9,8 +10,8 @@ class GridWidget(Canvas):
         self.shapes = [[[] for c in range(n_cols)] for r in range(n_rows)]
         self.imgs = {
             'pawn': {
-                'black': PhotoImage(file='/Users/smm/Downloads/DanProgramming/chess_assets/pawn_black.png'),
-                'white': PhotoImage(file='/Users/smm/Downloads/DanProgramming/chess_assets/pawn_white.png'),
+                'black': PhotoImage(file=os.path.dirname(__file__) + '/assets/pawn_black.png'),
+                'white': PhotoImage(file=os.path.dirname(__file__) + '/assets/pawn_white.png'),
             }
         }
         self.draw_grid()
