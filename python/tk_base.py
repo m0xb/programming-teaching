@@ -22,7 +22,7 @@ class TkBaseApp:
         self.main_window = main_window = Tk()
         # Create a container that belongs to the main window
         container_frame = ttk.Frame(main_window, padding=10)
-        container_frame.pack()
+        container_frame.pack(fill=BOTH, expand=True)
 
         button_container_frame = ttk.Frame(container_frame)
         button_container_frame.pack()
@@ -32,9 +32,8 @@ class TkBaseApp:
             def wrap(fn):
                 return lambda: fn(self)
             ttk.Button(button_container_frame, text=label, command=wrap(func)).pack(side=LEFT)
-        self.canvas = Canvas(container_frame, bg="#000000", height=800, width=1200)
-        #canvas.pack(fill=BOTH, expand=1)
-        self.canvas.pack()
+        self.canvas = Canvas(container_frame, bg="#000000", height=400, width=600)
+        self.canvas.pack(fill=BOTH, expand=True)
 
         if self.init_ui:
             self.init_ui(self)
