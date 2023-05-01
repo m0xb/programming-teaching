@@ -229,19 +229,13 @@ class TreeUI:
             else:
                 return '#A0A0A0'
         self.draw_options = DrawOptions(['#FFF'], subtree_bounds=False, text_color_fn=text_color_fn)
+        self.app = None
         self.colorful = False
+
+    def init_ui(self, app):
+        self.app = app
         self.reset()
 
-    _extra_ui_init = False
-    def _init_extra_ui(self, app):
-        if not app:
-            #print("Not ready...")
-            return
-        if self._extra_ui_init:
-            return
-        self._extra_ui_init = True
-
-        print("INIT EXTRA UI")
         master = app.canvas.master
         #print("master = {}".format(master))
         import tkinter.messagebox
@@ -277,7 +271,7 @@ class TreeUI:
             result = self.tree.find_path(int(input_val))
             print("RESULT = {}".format(result))
             self.draw_options.line_color_fn = line_color_fn_highlight_path(result[0], result[1])
-            self.draw(app)
+            self.draw()
             #tkinter.messagebox.showinfo("title??", message="Why is this a folder icon??\n\nAnyways, you entered: '{}'".format(input_val))
         row_frame = ttk.Frame(master)
         row_frame.pack(side=tk.LEFT)
@@ -287,7 +281,6 @@ class TreeUI:
         b.pack(side=tk.LEFT)
 
     def bigtree(self, app):
-        self._init_extra_ui(app)
         def bigtreeinner(value, sz):
             self.tree.insert(TreeNode(value))
             if sz > 1:
@@ -299,13 +292,11 @@ class TreeUI:
         bigtreeinner(value - value//2, value//4)
         bigtreeinner(value + value//2, value//4)
 
-        self.draw(app)
+        self.draw()
     # b = ttk.Button(row_frame, text="Big Tree!", command=bigtree)
     # b.pack(side=tk.RIGHT)
 
-
     def reset(self, app=None):
-        self._init_extra_ui(app)
         #self.tree = TreeNode(50)
         self.tree = TreeNode(10, # B
                              TreeNode(5, TreeNode(1), TreeNode(7)),  # A + children
@@ -314,12 +305,11 @@ class TreeUI:
         self.tree.x = 5
         self.tree.y = 5
         self.next_value = 1
-        if app:
-            self.draw(app)
+        self.draw()
 
     def toggle_bounds(self, app):
         self.draw_options.subtree_bounds = not self.draw_options.subtree_bounds
-        self.draw(app)
+        self.draw()
 
     def toggle_colorful(self, app):
         if self.colorful:
@@ -327,7 +317,7 @@ class TreeUI:
         else:
             self.draw_options.line_colors = ['#F00', '#F80', '#FF0', '#0F0', '#0F8', '#0FF', '#08F', '#00F']
         self.colorful = not self.colorful
-        self.draw(app)
+        self.draw()
 
     def add_node(self, app):
         self.prev_tree = self.tree.clone()
@@ -336,19 +326,19 @@ class TreeUI:
         # self.tree.insert(TreeNode([1, 74, 47][self.next_value - 1]))
         # self.tree.insert(TreeNode([52, 54, 56, 58, 49, 51, 53, 55, 57, 59][self.next_value - 1]))
         self.next_value += 1
-        self.draw(app)
+        self.draw()
 
     def rotate_right(self, app):
         self.prev_tree = self.tree.clone()
         self.tree = self.tree.rotate_right()
-        self.draw(app)
+        self.draw()
 
     def rotate_left(self, app):
         self.prev_tree = self.tree.clone()
         self.tree = self.tree.rotate_left()
-        self.draw(app)
+        self.draw()
 
-    def draw(self, app):
+    def draw(self):
         # tree = TreeNode(
         #     10,
         #     TreeNode(5, None, None),
@@ -356,27 +346,29 @@ class TreeUI:
         # tree.x = 5
         # tree.y = 5
 
-        app.canvas.delete("all")
+        self.app.canvas.delete("all")
         self.tree.x = 5
         self.tree.y = 5
-        self.tree.draw(app.canvas, self.draw_options)
+        self.tree.draw(self.app.canvas, self.draw_options)
         if self.prev_tree:
             self.prev_tree.x = self.tree.x + self.tree.width + 25
             self.prev_tree.y = self.tree.y
-            self.prev_tree.draw(app.canvas, DrawOptions(['#888'], text_color_fn=self.draw_options.text_color_fn))
+            self.prev_tree.draw(self.app.canvas, DrawOptions(['#888'], text_color_fn=self.draw_options.text_color_fn))
 
-        app.canvas.create_text(5, 800, anchor=tk.SW, fill="#FFF", text="Height: " + str(self.tree.tree_height()))
-        app.canvas.create_text(100, 800, anchor=tk.SW, fill="#FFF", text="Balance: " + str(self.tree.balance()))
-        app.canvas.create_text(200, 800, anchor=tk.SW, fill="#FFF", text="Size: " + str(self.tree.size()))
+        canvas_h = self.app.canvas.winfo_height() - 6
+        self.app.canvas.create_text(5, canvas_h, anchor=tk.SW, fill="#FFF", text="Height: " + str(self.tree.tree_height()))
+        self.app.canvas.create_text(100, canvas_h, anchor=tk.SW, fill="#FFF", text="Balance: " + str(self.tree.balance()))
+        self.app.canvas.create_text(200, canvas_h, anchor=tk.SW, fill="#FFF", text="Size: " + str(self.tree.size()))
 
 
 tree_ui = TreeUI()
 tk_base.TkBaseApp({
-    "Add Node": tree_ui.add_node,
-    "Rotate Left": tree_ui.rotate_left,
-    "Rotate Right": tree_ui.rotate_right,
-    "Toggle Bounds": tree_ui.toggle_bounds,
-    "Toggle Colors": tree_ui.toggle_colorful,
-    "Bigtree!": tree_ui.bigtree,
-    "Reset": tree_ui.reset,
-}).run()
+        "Add Node": tree_ui.add_node,
+        "Rotate Left": tree_ui.rotate_left,
+        "Rotate Right": tree_ui.rotate_right,
+        "Toggle Bounds": tree_ui.toggle_bounds,
+        "Toggle Colors": tree_ui.toggle_colorful,
+        "Bigtree!": tree_ui.bigtree,
+        "Reset": tree_ui.reset,
+    }, tree_ui.init_ui
+).run()
