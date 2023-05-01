@@ -5,6 +5,7 @@ class DoodlerUI:
     def __init__(self):
         # The `app` attribute will be set in init_ui
         self.app = None
+        self.window_size = None
 
         self.is_mouse_down = False
         self.mouse_last_pos = None
@@ -21,11 +22,18 @@ class DoodlerUI:
 
     def init_ui(self, app):
         self.app = app
-        print("Setting up events!")
         app.canvas.bind("<ButtonPress-1>", self.canvas_mouse_down)
         app.canvas.bind("<ButtonRelease-1>", self.canvas_mouse_up)
         app.canvas.bind("<B1-Motion>", self.canvas_move_mouse)
+        app.main_window.bind("<Configure>", self.on_configure)
         self.draw_ui()
+
+    def on_configure(self, event):
+        new_window_size = (event.width, event.height)
+        if new_window_size != self.window_size:
+            print("Changed window size: {} -> {}".format(self.window_size, new_window_size))
+            self.window_size = new_window_size
+            self.draw_ui()
 
     def change_palette(self, app):
         self.color_palette_index = (self.color_palette_index + 1) % len(self.color_palettes)
