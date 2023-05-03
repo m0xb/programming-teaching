@@ -20,6 +20,14 @@ class Rectangle:
     height: int
     draw_options: dict
 
+    def normalize(self):
+        if self.width < 0:
+            self.x += self.width
+            self.width = -self.width
+        if self.height < 0:
+            self.y += self.height
+            self.height = -self.height
+
     def get_bounds(self):
         return AABB(self.x, self.y, self.x + self.width, self.y + self.height)
 
@@ -36,6 +44,7 @@ class CollisionUI:
         # the list of objects we'll draw
         self.objects = []
         # the currently active selection box the user is drawing
+        self.selection_start_pos = None
         self.selection_box = None
         # counter that keeps track of how long the app has been running (since last reset)
         self.time = 0
@@ -78,8 +87,6 @@ class CollisionUI:
                 continue
             #print("Check for collision between {} and {}".format(collide_against_object, object))
             b = object.get_bounds()
-            collide_x = False
-            collide_y = False
             collide = False
             # if a.x2 > b.x1 or b.x2 >= a.x1:
             if a.x2 > b.x1 and a.y2 > b.y1:
@@ -95,9 +102,12 @@ class CollisionUI:
             #break
 
     def on_mouse_move(self, event):
-        if self.selection_box:
-            self.selection_box.width = event.x - self.selection_box.x
-            self.selection_box.height = event.y - self.selection_box.y
+        if self.selection_start_pos:
+            self.selection_box.x = self.selection_start_pos[0]
+            self.selection_box.y = self.selection_start_pos[1]
+            self.selection_box.width = event.x - self.selection_start_pos[0]
+            self.selection_box.height = event.y - self.selection_start_pos[1]
+            self.selection_box.normalize()
             self.check_collisions(self.selection_box)
             self.draw()
 
@@ -107,6 +117,7 @@ class CollisionUI:
 
     def on_press(self, event):
         print("Press: {}, {}".format(event.x, event.y))
+        self.selection_start_pos = (event.x, event.y)
         self.selection_box = Rectangle(event.x, event.y, 0, 0, dict(outline="#FFFFFF"))
         self.objects.append(self.selection_box)
         self.draw()
@@ -115,13 +126,14 @@ class CollisionUI:
         print("Release: {}, {}".format(event.x, event.y))
         self.objects.remove(self.selection_box)
         self.selection_box = None
+        self.selection_start_pos = None
         self.draw()
 
     def populate(self, app):
         # self.objects.append(Rectangle(300, 20, 100, 200, dict(outline="#FFFFFF")))
         # self.objects.append(Rectangle(50, 500, 30, 30, dict(outline="#FFFFFF")))
         for i in range(10):
-            self.objects.append(Rectangle(i * 100, i * 80, 30, 30, dict(outline="#FFFFFF")))
+            self.objects.append(Rectangle(5 + i * 100, 5 + i * 80, 30, 30, dict(outline="#FFFFFF")))
         for i in range(10):
             self.objects.append(Rectangle(random.randint(5, 1100), random.randint(5, 800), 30, 30, dict(outline="#FFFFFF")))
         self.draw()
