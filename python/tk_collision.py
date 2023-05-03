@@ -85,7 +85,7 @@ class CollisionUI:
             if a.x2 > b.x1 and a.y2 > b.y1:
                 # At this point, we know that for both the x- and y-axis,
                 # the object A's bounds exceed the starting point of B's
-                if b.x1 > a.x1 and b.y1 > a.y1:
+                if b.x2 > a.x1 and b.y2 > a.y1:
                     collide = True
 
             if collide:
@@ -107,7 +107,7 @@ class CollisionUI:
 
     def on_press(self, event):
         print("Press: {}, {}".format(event.x, event.y))
-        self.selection_box = Rectangle(event.x, event.y, 0, 0, dict(outline="#FF0000"))
+        self.selection_box = Rectangle(event.x, event.y, 0, 0, dict(outline="#FFFFFF"))
         self.objects.append(self.selection_box)
         self.draw()
 
