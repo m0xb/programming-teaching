@@ -16,6 +16,12 @@ class AABB:
     x2: int
     y2: int
 
+
+@dataclass
+class DynamicDraw:
+    draw: any
+
+
 @dataclass
 class Rectangle:
     x: int
@@ -40,8 +46,9 @@ class Rectangle:
 
 
 class MovingRect(Tickable):
-    def __init__(self, rect: Rectangle, object_container):
+    def __init__(self, rect: Rectangle, velocity, object_container):
         self.rect = rect
+        self.velocity = velocity
         self.object_container = object_container
         self.draw_options = rect.draw_options
 
@@ -52,7 +59,8 @@ class MovingRect(Tickable):
         return self.rect.get_bounds()
 
     def tick(self):
-        self.rect.x += 3
+        self.rect.x += self.velocity[0]
+        self.rect.y += self.velocity[1]
 
 
 class ObjectContainer:
@@ -84,6 +92,9 @@ class ObjectContainer:
                 continue
             #print("Check for collision between {} and {}".format(collide_against_object, object))
             b = object.get_bounds()
+            if not b:
+                print("Object {} does not return any AABB, skip collision test".format(object))
+                continue
             collide = False
             # if a.x2 > b.x1 or b.x2 >= a.x1:
             if a.x2 > b.x1 and a.y2 > b.y1:
@@ -111,11 +122,33 @@ class Tool:
 class SpawnTool(Tool):
     def __init__(self, object_container: ObjectContainer):
         self.object_container = object_container
+        self.click_start_pos = None
+        self.cur_pos = None
+        self.velocity_line = None
+
+    def on_press(self, event):
+        self.click_start_pos = (event.x, event.y)
+        self.cur_pos = (event.x, event.y)
+        self.velocity_line = DynamicDraw(lambda canvas: canvas.create_line(
+            self.click_start_pos[0], self.click_start_pos[1],
+            self.cur_pos[0], self.cur_pos[1], fill="#FFFF00"))
+        self.object_container.objects.append(self.velocity_line)
+        return True
 
     def on_release(self, event):
-        print("Click (SpawnTool): {}, {}".format(event.x, event.y))
-        self.object_container.objects.append(MovingRect(Rectangle(event.x, event.y, 10, 10, dict(fill="#FF0")), self.object_container))
+        velocity = ((self.cur_pos[0] - self.click_start_pos[0])/10, (self.cur_pos[1] - self.click_start_pos[1])/10)
+        self.object_container.objects.remove(self.velocity_line)
+        self.velocity_line = None
+        self.click_start_pos = None
+        self.cur_pos = None
+        self.object_container.objects.append(MovingRect(Rectangle(event.x, event.y, 10, 10, dict(fill="#FF0")), velocity, self.object_container))
         return True
+
+    def on_mouse_move(self, event):
+        if self.click_start_pos:
+            self.cur_pos = (event.x, event.y)
+            return True
+        return False
 
 
 class SelectTool(Tool):
