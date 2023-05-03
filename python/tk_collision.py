@@ -85,11 +85,11 @@ class CollisionUI:
             if a.x2 > b.x1 and a.y2 > b.y1:
                 # At this point, we know that for both the x- and y-axis,
                 # the object A's bounds exceed the starting point of B's
-                if True:
+                if b.x1 > a.x1 and b.y1 > a.y1:
                     collide = True
 
             if collide:
-                object.draw_options['fill'] = 'red'
+                object.draw_options['fill'] = '#FF0000'
             else:
                 object.draw_options['fill'] = ''
             #break
