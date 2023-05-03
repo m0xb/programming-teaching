@@ -53,7 +53,6 @@ class MovingRect(Tickable):
 
     def tick(self):
         self.rect.x += 3
-        self.object_container.highlight_collisions(self.rect)
 
 
 class ObjectContainer:
@@ -99,9 +98,6 @@ class ObjectContainer:
 
 
 class Tool:
-    def on_click(self, event):
-        return False
-
     def on_press(self, event):
         return False
 
@@ -116,7 +112,7 @@ class SpawnTool(Tool):
     def __init__(self, object_container: ObjectContainer):
         self.object_container = object_container
 
-    def on_click(self, event):
+    def on_release(self, event):
         print("Click (SpawnTool): {}, {}".format(event.x, event.y))
         self.object_container.objects.append(MovingRect(Rectangle(event.x, event.y, 10, 10, dict(fill="#FF0")), self.object_container))
         return True
@@ -174,8 +170,6 @@ class CollisionUI:
 
     def init_ui(self, app):
         app.canvas.bind('<Motion>', self.on_mouse_move)
-        # FIXME: Seems like a Tk bug or quirk... click event doesn't fire if ButtonPress handler is also added
-        app.canvas.bind('<Button-1>', self.on_click)
         app.canvas.bind('<ButtonPress-1>', self.on_press)
         app.canvas.bind('<ButtonRelease-1>', self.on_release)
         app.main_window.after(self.TICK_INTERVAL, self.tick, app)
@@ -201,12 +195,6 @@ class CollisionUI:
     def on_mouse_move(self, event):
         if self.active_tool.on_mouse_move(event):
             self.draw()
-
-    def on_click(self, event):
-        if self.active_tool.on_click(event):
-            self.draw()
-        print("Click (CollisionUI): {}, {}".format(event.x, event.y))
-
 
     def on_press(self, event):
         if self.active_tool.on_press(event):
