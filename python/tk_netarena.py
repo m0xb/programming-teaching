@@ -1,3 +1,4 @@
+import re
 import select
 import socket
 import sys
@@ -65,18 +66,25 @@ class NetArenaUI:
                     # handle new connections (from server_socket)
                     conn, addr = s.accept()
                     self.clients.append(conn)
+                    self.client_opts[conn] = {'color': '#FFFFFF'}
                     print(f"Got a new client: {addr}")
                 else:
                     # handle data from a client connection
                     data = s.recv(2048)
                     if data:
-                        self.process_client_command(data)
+                        self.process_client_command(s, data)
 
-    def process_client_command(self, data: bytes):
+    def process_client_command(self, conn, data: bytes):
         try:
             command = data.decode('ascii')
-            x, y, w, h = map(int, command.split(' '))  # enter command like: 1 1 20 20
-            self.object_container.objects.append(Rectangle(x, y, w, h, dict(fill="#FF0000")))
+            params = re.split('\\s+', command)
+            if params[0] == 'rect':
+                x, y, w, h = map(int, params[1:5])
+                self.object_container.objects.append(Rectangle(x, y, w, h, dict(fill=self.client_opts[conn]['color'])))
+            elif params[0] == 'color':
+                self.client_opts[conn]['color'] = params[1]
+            else:
+                raise Exception(f"Unknown command: '{params[0]}'")
         except Exception as e:
             print(f"Bad command {data}")
             print(e)
@@ -85,6 +93,7 @@ class NetArenaUI:
         print(f"Start server {host}:{port}")
 
         self.clients = []  # list of sockets for clients which are connected
+        self.client_opts = {}
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((host, port))
         self.server_socket.listen()
